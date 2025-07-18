@@ -50,7 +50,7 @@
   let previewMarker = null;
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
+    attribution: 'Â© OpenStreetMap'
   }).addTo(map);
 
   // Klik peta untuk pilih koordinat
@@ -99,7 +99,7 @@
     const data = { nama, keterangan, lat, lng };
 
     // Ganti URL ini dengan URL Web App Google Apps Script mu
-    const WEB_APP_URL = 'PASTE_WEB_APP_URL_DISINI';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyZ1Z2bmh__04gwk2SwbS9MIc8lRY-GnWBR6-9RLTQ4LCormBGOo8csdhi7atkbWfU-4Q/exec';
 
     const response = await fetch(WEB_APP_URL, {
       method: 'POST',
