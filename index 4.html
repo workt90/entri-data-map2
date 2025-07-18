@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Tag Lokasi Pelanggan dengan Lokasi Saya</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map { height: 500px; width: 300px; margin-bottom: 15px; }
+    form input, form button { margin: 10px 0; display: block; }
+    /* style tombol lokasi di luar peta */
+    #lokasiSayaBtn {
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: #f8f8f8;
+      margin-bottom: 10px;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Input Lokasi Pelanggan</h2>
+
+<!-- Tombol Lokasi Saya di luar peta -->
+<button id="lokasiSayaBtn">?? Lokasi Saya</button>
+
+<div id="map"></div>
+
+<form id="form">
+  <label>Nama:</label>
+  <input type="text" id="nama" required />
+
+  <label>Keterangan:</label>
+  <input type="text" id="keterangan" />
+
+  <label>Koordinat:</label>
+  <input type="text" id="koordinat" readonly />
+
+  <button type="button" onclick="previewData()">Preview</button>
+  <button type="submit">Simpan</button>
+</form>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  // Inisialisasi peta
+  const map = L.map('map').setView([-7.557, 110.8784], 11);
+  let previewMarker = null;
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  // Klik peta untuk pilih koordinat
+  map.on('click', function(e) {
+    const { lat, lng } = e.latlng;
+    const koordinat = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+    document.getElementById('koordinat').value = koordinat;
+
+    if (previewMarker) map.removeLayer(previewMarker);
+    previewMarker = L.marker([lat, lng]).addTo(map);
+  });
+
+  // Fungsi preview data di peta
+  function previewData() {
+    const nama = document.getElementById('nama').value;
+    const keterangan = document.getElementById('keterangan').value;
+    const koordinat = document.getElementById('koordinat').value;
+
+    if (!koordinat || !nama) {
+      alert("Pilih lokasi di peta dan isi nama pelanggan.");
+      return;
+    }
+
+    const [lat, lng] = koordinat.split(',').map(Number);
+
+    if (previewMarker) map.removeLayer(previewMarker);
+    previewMarker = L.marker([lat, lng]).addTo(map)
+      .bindPopup(`<b>${nama}</b><br>${keterangan}`).openPopup();
+  }
+
+  // Submit form simpan data ke Google Sheets
+  document.getElementById('form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const nama = document.getElementById('nama').value;
+    const keterangan = document.getElementById('keterangan').value;
+    const koordinat = document.getElementById('koordinat').value;
+
+    if (!nama || !koordinat) {
+      alert("Data belum lengkap.");
+      return;
+    }
+
+    const [lat, lng] = koordinat.split(',').map(Number);
+
+    const data = { nama, keterangan, lat, lng };
+
+    // Ganti URL ini dengan URL Web App Google Apps Script mu
+    const WEB_APP_URL = 'PASTE_WEB_APP_URL_DISINI';
+
+    const response = await fetch(WEB_APP_URL, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+      alert("Data berhasil disimpan ke Google Sheets!");
+      document.getElementById('form').reset();
+      document.getElementById('koordinat').value = '';
+      if (previewMarker) map.removeLayer(previewMarker);
+    } else {
+      alert("Gagal menyimpan data.");
+    }
+  });
+
+  // Fungsi tombol Lokasi Saya di luar peta
+  document.getElementById('lokasiSayaBtn').addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation tidak didukung oleh browser ini.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+
+        if (previewMarker) map.removeLayer(previewMarker);
+        previewMarker = L.marker([lat, lng]).addTo(map)
+          .bindPopup("Ini Lokasi Saya").openPopup();
+
+        map.setView([lat, lng], 15);
+
+        // Update form koordinat
+        document.getElementById('koordinat').value = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+      },
+      (err) => {
+        alert("Gagal mendapatkan lokasi: " + err.message);
+      },
+      { enableHighAccuracy: true }
+    );
+  });
+
+</script>
+
+</body>
+</html>
